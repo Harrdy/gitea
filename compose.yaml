@@ -4,7 +4,7 @@ services:
     container_name: gitea
     restart: always
     environment:
-      TZ: "Europe/Berlin"
+      TZ: "${TZ:-Europe/Berlin}"
       GITEA__database__DB_TYPE: postgres
       GITEA__database__HOST: ${DB_HOST}
       GITEA__database__NAME: ${DB_NAME}
