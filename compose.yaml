@@ -60,6 +60,31 @@ services:
       GITEA_RUNNER_NAME: "home-server-runner"
       GITEA_RUNNER_LABELS: "ubuntu-latest:docker://docker.gitea.com/runner-images:ubuntu-latest,linux:docker"
 
+  gitea-mcp:
+    image: docker.gitea.com/gitea-mcp-server:latest   # Image/Tag laut Repo-README prüfen
+    container_name: gitea-mcp
+    restart: always
+    depends_on:
+      - gitea
+    command: ["-t", "streamable-http", "--host", "0.0.0.0", "--port", "8080"]
+    environment:
+      GITEA_HOST: http://gitea:3000
+      GITEA_ACCESS_TOKEN: ${GITEA_MCP_TOKEN}
+    networks:
+      - frontend
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.gitea-mcp-https.rule: "Host(`${MCP_DOMAIN}`)"
+      traefik.http.routers.gitea-mcp-https.entrypoints: "websecure"
+      traefik.http.routers.gitea-mcp-https.tls: "true"
+      traefik.http.routers.gitea-mcp-https.service: "gitea-mcp-svc"
+      traefik.http.routers.gitea-mcp-https.middlewares: "gitea-mcp-lan,gitea-mcp-auth"
+      traefik.http.services.gitea-mcp-svc.loadBalancer.server.port: "8080"
+      # Nur aus dem LAN erlauben (Subnetz an dein Netz anpassen)
+      traefik.http.middlewares.gitea-mcp-lan.ipAllowList.sourceRange: "192.168.0.0/16"
+      # Basic Auth: Hash mit `htpasswd -nB sven` erzeugen, $ im Compose-File als $$ schreiben
+      traefik.http.middlewares.gitea-mcp-auth.basicAuth.users: "${MCP_BASIC_AUTH}"
+
 networks:
   frontend:
     external: true
